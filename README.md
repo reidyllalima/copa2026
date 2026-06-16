@@ -34,16 +34,6 @@ copa2026/
 └── README.md
 ```
 
-### js/app.js — métodos públicos expostos
-
-| Método | Descrição |
-|---|---|
-| `App.refresh()` | Busca placares atualizados na ESPN API |
-| `App.switchTab(tab, btn)` | Alterna entre as abas "Ao Vivo" e "Histórico" |
-| `App.doSearch()` | Executa a busca pelo valor do campo `#teamSearch` |
-| `App.clearSearch()` | Limpa o filtro de busca e restaura a visão normal |
-| `App.onFlagError(img)` | Fallback chamado pelo `onerror` das bandeiras |
-
 ## 🌐 Horários
 
 Todos os horários estão em **horário de Brasília (UTC−3)**.
@@ -54,16 +44,3 @@ Todos os horários estão em **horário de Brasília (UTC−3)**.
 - **48 seleções** / **12 grupos**
 - Fase de grupos: **11 a 27 de junho de 2026**
 
-## 📋 Histórico de alterações
-
-### v3 — Junho 2026
-- **Busca por seleção:** campo accent/case-insensitive (`México == mexico`) com filtro em tempo real e botão Buscar. Exibe todos os jogos da seleção (passados, ao vivo e futuros) em uma única visão.
-- **Fallback de bandeiras:** adicionado `onerror` em todas as `<img>` de bandeira — se a imagem do flagcdn falhar, substitui automaticamente pelo emoji ou abreviação da seleção.
-- **Correção de dados:** substituído o placeholder "Repescagem M1" pela **República Democrática do Congo** (`COD` / 🇨🇩), que se classificou pela repescagem intercontinental vencendo a Jamaica por 1–0 na prorrogação.
-- **Segurança:** escape de HTML no termo buscado para evitar XSS.
-
-### v2 — Junho 2026 (redesign)
-- Redesign visual: tema dourado escuro, bandeiras circulares via flagcdn.com, animações de entrada escalonadas nos cards.
-
-### v1 — Junho 2026
-- Layout inicial em grade 3×, abas Ao Vivo/Histórico, placares via ESPN API.
