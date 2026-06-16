@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Copa do Mundo 2026 — Calendário e Placares</title>
+  <meta name="description" content="Acompanhe todos os jogos da Copa do Mundo 2026: placares, horários e resultados ao vivo." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">FIFA World Cup</div>
+      <h1 class="hero-title">Copa do Mundo <span>2026</span></h1>
+      <p class="hero-sub">EUA · Canadá · México &nbsp;·&nbsp; 11 jun – 19 jul</p>
+      <div class="hero-stats">
+        <div class="hstat"><span class="hstat-n">48</span><span class="hstat-l">seleções</span></div>
+        <div class="hstat-div"></div>
+        <div class="hstat"><span class="hstat-n">104</span><span class="hstat-l">jogos</span></div>
+        <div class="hstat-div"></div>
+        <div class="hstat"><span class="hstat-n">16</span><span class="hstat-l">cidades</span></div>
+        <div class="hstat-div"></div>
+        <div class="hstat"><span class="hstat-n">39</span><span class="hstat-l">dias</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- STICKY NAV / TABS -->
+  <nav class="filters" id="filters">
+    <div class="filters-inner">
+      <div class="nav-tabs" role="tablist">
+        <button class="ntab active" role="tab" aria-selected="true"
+          onclick="App.switchTab('main', this)">Ao Vivo &amp; Próximos</button>
+        <button class="ntab" role="tab" aria-selected="false"
+          onclick="App.switchTab('history', this)">Histórico</button>
+      </div>
+      <button class="refresh-btn" id="refreshBtn" onclick="App.refresh()" aria-label="Atualizar placares">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        <span>Atualizar</span>
+      </button>
+    </div>
+    <div class="update-bar" id="updateBar"></div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="main">
+    <div class="loading-state" id="loadingState">
+      <div class="spinner"></div>
+      <p>Carregando placares...</p>
+    </div>
+    <div id="sections"></div>
+  </main>
+
+  <footer class="footer">
+    <p>Copa do Mundo FIFA 2026 · Horários em Brasília (UTC−3) · Dados atualizados via IA</p>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
