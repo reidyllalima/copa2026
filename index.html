@@ -44,6 +44,20 @@
         <span>Atualizar</span>
       </button>
     </div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="teamSearch" class="search-input"
+          placeholder="Buscar seleção (ex: Brasil, Mexico, ENG…)"
+          autocomplete="off" aria-label="Buscar seleção"
+          oninput="App.doSearch()">
+        <button class="search-clear hidden" id="searchClear"
+          onclick="App.clearSearch()" aria-label="Limpar busca">✕</button>
+      </div>
+      <button class="search-btn" onclick="App.doSearch()" aria-label="Buscar">Buscar</button>
+    </div>
     <div class="update-bar" id="updateBar"></div>
   </nav>
 

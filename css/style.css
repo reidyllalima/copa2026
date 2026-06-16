@@ -230,6 +230,109 @@ body {
 }
 .update-bar.visible { height: 22px; padding: 3px 1rem 4px; }
 
+/* ─── SEARCH ─── */
+.search-row {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1rem 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-3);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border-mid);
+  border-radius: 20px;
+  padding: 7px 36px 7px 34px;
+  color: var(--text-1);
+  font-size: 13px;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.search-input::placeholder { color: var(--text-3); }
+
+.search-input:focus {
+  border-color: rgba(245,197,24,0.5);
+  box-shadow: 0 0 0 3px rgba(245,197,24,0.08);
+}
+
+.search-clear {
+  position: absolute;
+  right: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: var(--text-3);
+  color: var(--bg);
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.2s;
+}
+
+.search-clear:hover { background: var(--red); }
+.search-clear.hidden { display: none; }
+
+.search-btn {
+  flex-shrink: 0;
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: #111;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: opacity 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  white-space: nowrap;
+}
+
+.search-btn:hover {
+  opacity: 0.85;
+  box-shadow: 0 0 12px rgba(245,197,24,0.3);
+}
+
+.search-result-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.85rem;
+  background: rgba(245,197,24,0.05);
+  border: 1px solid rgba(245,197,24,0.15);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.25rem;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.search-result-banner strong { color: var(--gold); font-weight: 600; }
+.search-result-banner span:last-child { color: var(--text-3); }
+
 /* ─── MAIN ─── */
 .main {
   max-width: 900px;

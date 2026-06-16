@@ -3,9 +3,10 @@
 const App = (() => {
 
   /* ── STATE ── */
-  let scores    = {};
-  let fetching  = false;
-  let activeTab = 'main';
+  let scores      = {};
+  let fetching    = false;
+  let activeTab   = 'main';
+  let searchQuery = '';
 
   /* ── MAPEAMENTO ESPN → chave local ── */
   const ESPN_TO_LOCAL = {
@@ -32,6 +33,14 @@ const App = (() => {
   };
 
   /* ── HELPERS ── */
+  function normalize(str) {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
   function matchDate(m) {
     const [Y, Mo, D] = m.d.split('-').map(Number);
     const [H, Min]   = m.h.split(':').map(Number);
@@ -74,10 +83,19 @@ const App = (() => {
     } catch(e) { return null; }
   }
 
+  function onFlagError(img) {
+    const key  = img.dataset.teamkey;
+    const team = TEAMS[key] || { flag: '🏳', abbr: key };
+    const span = document.createElement('span');
+    span.className = 'cb-flag';
+    span.textContent = ['ENG', 'SCO'].includes(key) ? team.abbr : team.flag;
+    if (img.parentNode) img.parentNode.replaceChild(span, img);
+  }
+
   function flagEl(teamKey, team) {
     const url = flagURL(teamKey, team.flag);
     return url
-      ? `<img class="cb-flag" src="${url}" alt="${team.name}" loading="lazy">`
+      ? `<img class="cb-flag" src="${url}" alt="${team.name}" loading="lazy" data-teamkey="${teamKey}" onerror="App.onFlagError(this)">`
       : `<span class="cb-flag">${team.flag}</span>`;
   }
 
@@ -205,20 +223,47 @@ const App = (() => {
 
   /* ── RENDER PRINCIPAL ── */
   function render() {
-    const live     = MATCHES.filter(m => getStatus(m) === 'live');
-    const upcoming = MATCHES.filter(m => getStatus(m) === 'upcoming');
-    const past     = MATCHES.filter(m => getStatus(m) === 'past').reverse();
-
     let html = '';
 
-    if (activeTab === 'main') {
-      html += renderLiveSection(live);
-      html += renderCalendar(upcoming);
-      if (!live.length && !upcoming.length) {
-        html = '<div class="empty-section">Nenhum jogo em andamento ou futuro.</div>';
+    if (searchQuery) {
+      const q        = normalize(searchQuery);
+      const filtered = MATCHES.filter(m => {
+        const t1 = TEAMS[m.h1] || {};
+        const t2 = TEAMS[m.h2] || {};
+        return [t1.name, t1.abbr, m.h1, t2.name, t2.abbr, m.h2]
+          .filter(Boolean)
+          .some(v => normalize(v).includes(q));
+      });
+
+      if (!filtered.length) {
+        html = `<div class="empty-section">Nenhuma seleção encontrada para "<em>${escHtml(searchQuery)}</em>".</div>`;
+      } else {
+        const fLive     = filtered.filter(m => getStatus(m) === 'live');
+        const fUpcoming = filtered.filter(m => getStatus(m) === 'upcoming');
+        const fPast     = filtered.filter(m => getStatus(m) === 'past').reverse();
+        html += `
+          <div class="search-result-banner">
+            <span>Filtrando: <strong>${escHtml(searchQuery)}</strong></span>
+            <span>${filtered.length} jogo${filtered.length !== 1 ? 's' : ''}</span>
+          </div>`;
+        html += renderLiveSection(fLive);
+        html += renderCalendar(fUpcoming);
+        if (fPast.length) html += renderHistory(fPast);
       }
     } else {
-      html = renderHistory(past);
+      const live     = MATCHES.filter(m => getStatus(m) === 'live');
+      const upcoming = MATCHES.filter(m => getStatus(m) === 'upcoming');
+      const past     = MATCHES.filter(m => getStatus(m) === 'past').reverse();
+
+      if (activeTab === 'main') {
+        html += renderLiveSection(live);
+        html += renderCalendar(upcoming);
+        if (!live.length && !upcoming.length) {
+          html = '<div class="empty-section">Nenhum jogo em andamento ou futuro.</div>';
+        }
+      } else {
+        html = renderHistory(past);
+      }
     }
 
     document.getElementById('sections').innerHTML = html;
@@ -298,6 +343,19 @@ const App = (() => {
     fetching = false;
   }
 
+  function doSearch() {
+    searchQuery = (document.getElementById('teamSearch').value || '').trim();
+    document.getElementById('searchClear').classList.toggle('hidden', !searchQuery);
+    render();
+  }
+
+  function clearSearch() {
+    searchQuery = '';
+    document.getElementById('teamSearch').value = '';
+    document.getElementById('searchClear').classList.add('hidden');
+    render();
+  }
+
   function showUpdateBar(msg) {
     const bar = document.getElementById('updateBar');
     bar.textContent = msg;
@@ -331,6 +389,6 @@ const App = (() => {
 
   document.addEventListener('DOMContentLoaded', init);
 
-  return { refresh, switchTab };
+  return { refresh, switchTab, doSearch, clearSearch, onFlagError };
 
 })();
