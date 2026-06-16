@@ -7,10 +7,9 @@ Aplicação web responsiva para acompanhar todos os jogos da Copa do Mundo FIFA 
 - **Jogos encerrados** com placar real (via IA)
 - **Jogo ao vivo** destacado, se você acessar durante uma partida
 - **Próximos jogos** com data e horário (horário de Brasília)
-- **Filtro por grupo** (A–L), com destaque para o Grupo C 🇧🇷
 - **Bandeiras** e nomes das seleções
-- **Auto-refresh** a cada 5 minutos durante jogos ao vivo
-- Design responsivo: funciona em PC e celular
+- **Auto-refresh** a cada 60 segundos durante jogos ao vivo
+- **Design responsivo** em PC e celular
 
 ## 🗂 Estrutura
 
@@ -25,18 +24,6 @@ copa2026/
 └── README.md
 ```
 
-## 🚀 Como subir no GitHub Pages
-
-1. Suba a pasta no seu repositório GitHub
-2. Vá em **Settings → Pages**
-3. Em *Source*, selecione **main** branch, pasta **/ (root)**
-4. Pronto — a URL será `https://SEU-USUARIO.github.io/NOME-DO-REPO/`
-
-## 🔄 Como os placares funcionam
-
-Ao carregar a página (e ao clicar em **Atualizar**), a app consulta a API da Anthropic (`claude-sonnet-4-6`) com a lista dos jogos já encerrados e solicita os placares reais. O modelo responde com JSON puro, que é aplicado nos cartões correspondentes.
-
-> ℹ️ A API key é passada automaticamente pelo proxy da Anthropic (claude.ai). Para uso externo, configure sua própria chave no `app.js`.
 
 ## 🌐 Horários
 
