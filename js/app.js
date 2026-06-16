@@ -30,6 +30,8 @@ const App = (() => {
     'Argentina':'ARG', 'Algeria':'ALG', 'Austria':'AUT', 'Jordan':'JOR',
     'Portugal':'POR', 'Uzbekistan':'UZB', 'Colombia':'COL',
     'England':'ENG', 'Croatia':'CRO', 'Ghana':'GHA', 'Panama':'PAN',
+    'DR Congo':'COD', 'Congo DR':'COD', 'Democratic Republic of Congo':'COD',
+    'Congo, DR':'COD', 'Congo (DR)':'COD',
   };
 
   /* ── HELPERS ── */
