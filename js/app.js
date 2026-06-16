@@ -61,12 +61,33 @@ const App = (() => {
 
   const ROUND_LABEL = { 1: 'Rodada 1', 2: 'Rodada 2', 3: 'Rodada 3' };
 
+  /* Converte emoji de bandeira → URL de imagem (flagcdn.com) */
+  function flagURL(teamKey, emoji) {
+    const overrides = { ENG: 'gb-eng', SCO: 'gb-sct', WAL: 'gb-wls' };
+    if (overrides[teamKey]) return `https://flagcdn.com/w80/${overrides[teamKey]}.png`;
+    try {
+      const code = [...emoji]
+        .filter(c => c.codePointAt(0) >= 0x1F1E6 && c.codePointAt(0) <= 0x1F1FF)
+        .map(c => String.fromCharCode(c.codePointAt(0) - 0x1F1E6 + 65))
+        .join('').toLowerCase();
+      return code.length === 2 ? `https://flagcdn.com/w80/${code}.png` : null;
+    } catch(e) { return null; }
+  }
+
+  function flagEl(teamKey, team) {
+    const url = flagURL(teamKey, team.flag);
+    return url
+      ? `<img class="cb-flag" src="${url}" alt="${team.name}" loading="lazy">`
+      : `<span class="cb-flag">${team.flag}</span>`;
+  }
+
   /* ── RENDER: CARD ── */
-  function renderCard(m) {
+  function renderCard(m, idx) {
     const t1     = TEAMS[m.h1] || { name: m.h1, abbr: m.h1, flag: '🏴' };
     const t2     = TEAMS[m.h2] || { name: m.h2, abbr: m.h2, flag: '🏴' };
     const status = getStatus(m);
     const sc     = scores[m.id];
+    const delay  = idx !== undefined ? ` style="--card-delay:${(idx % 9) * 0.06}s"` : '';
 
     /* Cabeçalho */
     let headHtml;
@@ -106,17 +127,17 @@ const App = (() => {
     }
 
     return `
-      <article class="match-card ${status}" aria-label="${t1.name} × ${t2.name}">
+      <article class="match-card ${status}"${delay} aria-label="${t1.name} × ${t2.name}">
         <div class="card-head">${headHtml}</div>
         <div class="card-matchup">
           <div class="cb home">
-            <span class="cb-flag">${t1.flag}</span>
+            ${flagEl(m.h1, t1)}
             <span class="cb-abbr">${t1.abbr}</span>
             <span class="cb-name">${t1.name}</span>
           </div>
           <div class="card-vs">${vsHtml}</div>
           <div class="cb away">
-            <span class="cb-flag">${t2.flag}</span>
+            ${flagEl(m.h2, t2)}
             <span class="cb-abbr">${t2.abbr}</span>
             <span class="cb-name">${t2.name}</span>
           </div>
@@ -135,7 +156,7 @@ const App = (() => {
         <div class="section-line"></div>
         <span class="section-count">${matches.length} jogo${matches.length !== 1 ? 's' : ''}</span>
       </div>
-      <div class="cards-grid">${matches.map(renderCard).join('')}</div>`;
+      <div class="cards-grid">${matches.map((m, i) => renderCard(m, i)).join('')}</div>`;
   }
 
   /* ── RENDER: CALENDÁRIO (próximos jogos agrupados por dia) ── */
@@ -160,7 +181,7 @@ const App = (() => {
       html += `
         <div class="cal-day">
           <div class="cal-label">${fmtDateLong(day)}</div>
-          <div class="cards-grid">${byDay[day].map(renderCard).join('')}</div>
+          <div class="cards-grid">${byDay[day].map((m, i) => renderCard(m, i)).join('')}</div>
         </div>`;
     }
 
@@ -179,7 +200,7 @@ const App = (() => {
         <div class="section-line"></div>
         <span class="section-count">${past.length} jogo${past.length !== 1 ? 's' : ''}</span>
       </div>
-      <div class="cards-grid">${past.map(renderCard).join('')}</div>`;
+      <div class="cards-grid">${past.map((m, i) => renderCard(m, i)).join('')}</div>`;
   }
 
   /* ── RENDER PRINCIPAL ── */
