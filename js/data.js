@@ -48,6 +48,7 @@ const TEAMS = {
   CRO: { name: 'Croácia',          abbr: 'CRO', flag: '🇭🇷', group: 'L' },
   GHA: { name: 'Gana',             abbr: 'GHA', flag: '🇬🇭', group: 'L' },
   PAN: { name: 'Panamá',           abbr: 'PAN', flag: '🇵🇦', group: 'L' },
+  TBD: { name: 'A definir',        abbr: '···', flag: '⚽', group: null },
 };
 
 /* ─── DADOS: PARTIDAS
@@ -134,4 +135,49 @@ const MATCHES = [
   { id:'g070', d:'2026-06-27', h:'20:30', h1:'COD', h2:'UZB', venue:'Atlanta',           g:'K', r:3 },
   { id:'g071', d:'2026-06-27', h:'23:00', h1:'ALG', h2:'AUT', venue:'Kansas City',       g:'J', r:3 },
   { id:'g072', d:'2026-06-27', h:'23:00', h1:'JOR', h2:'ARG', venue:'Dallas',            g:'J', r:3 },
+
+  /* ─── MATA-MATA ─── */
+  /* ── RODADA DE 32 ── */
+  { id:'k073', d:'2026-06-28', h:'16:00', h1:'RSA', h2:'CAN', venue:'Los Angeles',       phase:'R32' },
+  { id:'k076', d:'2026-06-29', h:'14:00', h1:'BRA', h2:'JPN', venue:'Houston',           phase:'R32' },
+  { id:'k074', d:'2026-06-29', h:'17:30', h1:'GER', h2:'PAR', venue:'Boston',            phase:'R32' },
+  { id:'k075', d:'2026-06-29', h:'22:00', h1:'NED', h2:'MAR', venue:'Monterrey',         phase:'R32' },
+  { id:'k078', d:'2026-06-30', h:'14:00', h1:'CIV', h2:'NOR', venue:'Dallas',            phase:'R32' },
+  { id:'k077', d:'2026-06-30', h:'18:00', h1:'FRA', h2:'SWE', venue:'Nova York / NJ',   phase:'R32' },
+  { id:'k079', d:'2026-06-30', h:'22:00', h1:'MEX', h2:'ECU', venue:'Cidade do México', phase:'R32' },
+  { id:'k080', d:'2026-07-01', h:'13:00', h1:'ENG', h2:'COD', venue:'Atlanta',           phase:'R32' },
+  { id:'k082', d:'2026-07-01', h:'17:00', h1:'BEL', h2:'SEN', venue:'Seattle',           phase:'R32' },
+  { id:'k081', d:'2026-07-01', h:'21:00', h1:'USA', h2:'BIH', venue:'San Francisco',     phase:'R32' },
+  { id:'k084', d:'2026-07-02', h:'16:00', h1:'ESP', h2:'AUT', venue:'Los Angeles',       phase:'R32' },
+  { id:'k083', d:'2026-07-02', h:'20:00', h1:'POR', h2:'CRO', venue:'Toronto',           phase:'R32' },
+  { id:'k085', d:'2026-07-03', h:'00:00', h1:'SUI', h2:'ALG', venue:'Vancouver',         phase:'R32' },
+  { id:'k088', d:'2026-07-03', h:'15:00', h1:'AUS', h2:'EGY', venue:'Dallas',            phase:'R32' },
+  { id:'k086', d:'2026-07-03', h:'17:00', h1:'ARG', h2:'CPV', venue:'Miami',             phase:'R32' },
+  { id:'k087', d:'2026-07-03', h:'22:30', h1:'COL', h2:'GHA', venue:'Kansas City',       phase:'R32' },
+
+  /* ── OITAVAS DE FINAL ── */
+  { id:'k089', d:'2026-07-04', h:'15:00', h1:'TBD', h2:'TBD', venue:'Nova York / NJ',   phase:'R16' },
+  { id:'k090', d:'2026-07-04', h:'19:00', h1:'TBD', h2:'TBD', venue:'Boston',            phase:'R16' },
+  { id:'k091', d:'2026-07-05', h:'15:00', h1:'TBD', h2:'TBD', venue:'Seattle',           phase:'R16' },
+  { id:'k092', d:'2026-07-05', h:'19:00', h1:'TBD', h2:'TBD', venue:'Atlanta',           phase:'R16' },
+  { id:'k093', d:'2026-07-06', h:'15:00', h1:'TBD', h2:'TBD', venue:'Los Angeles',       phase:'R16' },
+  { id:'k094', d:'2026-07-06', h:'19:00', h1:'TBD', h2:'TBD', venue:'Kansas City',       phase:'R16' },
+  { id:'k095', d:'2026-07-07', h:'15:00', h1:'TBD', h2:'TBD', venue:'Monterrey',         phase:'R16' },
+  { id:'k096', d:'2026-07-07', h:'19:00', h1:'TBD', h2:'TBD', venue:'Dallas',            phase:'R16' },
+
+  /* ── QUARTAS DE FINAL ── */
+  { id:'k097', d:'2026-07-09', h:'17:00', h1:'TBD', h2:'TBD', venue:'Nova York / NJ',   phase:'QF' },
+  { id:'k098', d:'2026-07-09', h:'20:00', h1:'TBD', h2:'TBD', venue:'San Francisco',     phase:'QF' },
+  { id:'k099', d:'2026-07-10', h:'17:00', h1:'TBD', h2:'TBD', venue:'Filadélfia',        phase:'QF' },
+  { id:'k100', d:'2026-07-11', h:'17:00', h1:'TBD', h2:'TBD', venue:'Houston',           phase:'QF' },
+
+  /* ── SEMIFINAIS ── */
+  { id:'k101', d:'2026-07-14', h:'19:00', h1:'TBD', h2:'TBD', venue:'Dallas',            phase:'SF' },
+  { id:'k102', d:'2026-07-15', h:'19:00', h1:'TBD', h2:'TBD', venue:'Nova York / NJ',   phase:'SF' },
+
+  /* ── DISPUTA DE 3º LUGAR ── */
+  { id:'k103', d:'2026-07-18', h:'17:00', h1:'TBD', h2:'TBD', venue:'Miami',             phase:'3P' },
+
+  /* ── FINAL ── */
+  { id:'k104', d:'2026-07-19', h:'16:00', h1:'TBD', h2:'TBD', venue:'Nova York / NJ',   phase:'F' },
 ];

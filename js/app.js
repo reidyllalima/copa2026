@@ -72,6 +72,15 @@ const App = (() => {
 
   const ROUND_LABEL = { 1: 'Rodada 1', 2: 'Rodada 2', 3: 'Rodada 3' };
 
+  const PHASE_LABEL = {
+    R32: 'Rodada de 32',
+    R16: 'Oitavas de Final',
+    QF:  'Quartas de Final',
+    SF:  'Semifinal',
+    '3P':'3º Lugar',
+    F:   'Final',
+  };
+
   /* Converte emoji de bandeira → URL de imagem (flagcdn.com) */
   function flagURL(teamKey, emoji) {
     const overrides = { ENG: 'gb-eng', SCO: 'gb-sct', WAL: 'gb-wls' };
@@ -110,15 +119,16 @@ const App = (() => {
     const delay  = idx !== undefined ? ` style="--card-delay:${(idx % 9) * 0.06}s"` : '';
 
     /* Cabeçalho */
+    const phaseLabel = m.phase ? PHASE_LABEL[m.phase] : null;
     let headHtml;
     if (status === 'live') {
       headHtml = `
         <span class="live-badge"><span class="live-pulse"></span>AO VIVO</span>
-        <span class="card-round">Grupo ${m.g}</span>`;
+        <span class="card-round">${phaseLabel || 'Grupo ' + m.g}</span>`;
     } else {
       headHtml = `
-        <span class="card-grp">Grupo ${m.g}</span>
-        <span class="card-round">${ROUND_LABEL[m.r] || ''}</span>`;
+        <span class="card-grp">${phaseLabel || 'Grupo ' + m.g}</span>
+        <span class="card-round">${phaseLabel ? '' : (ROUND_LABEL[m.r] || '')}</span>`;
     }
 
     /* Placar ou horário */
