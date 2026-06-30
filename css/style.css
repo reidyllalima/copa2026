@@ -600,6 +600,7 @@ span.cb-flag {
 .card-vs {
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-width: 82px;
