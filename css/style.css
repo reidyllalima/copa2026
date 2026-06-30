@@ -654,6 +654,17 @@ span.cb-flag {
   letter-spacing: 2px;
 }
 
+.card-decision {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-top: 3px;
+  color: var(--text-2);
+}
+.card-decision.pen { color: var(--gold); }
+
 /* ── Card footer ── */
 .card-foot {
   padding: 0.45rem 0.85rem;

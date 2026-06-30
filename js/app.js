@@ -3,7 +3,10 @@
 const App = (() => {
 
   /* ── STATE ── */
-  let scores      = {};
+  let scores       = {};
+  let bracketTeams = {}; // { matchId: { h1: teamKey, h2: teamKey } }
+  let matchWinners = {}; // { matchId: { winnerKey, loserKey } } — da ESPN ou por placar
+  let matchMeta    = {}; // { matchId: { period, shootoutHome, shootoutAway } }
   let fetching    = false;
   let activeTab   = 'main';
   let searchQuery = '';
@@ -35,6 +38,26 @@ const App = (() => {
   };
 
   /* ── HELPERS ── */
+
+  /* Retorna os times efetivos de um jogo, sobrescrevendo TBD com dados do bracket */
+  function getEffectiveTeams(m) {
+    const bt = bracketTeams[m.id] || {};
+    return { h1: bt.h1 || m.h1, h2: bt.h2 || m.h2 };
+  }
+
+  /* Retorna o tipo de decisão de um jogo (pênaltis ou prorrogação), null se tempo normal */
+  function getMatchDecision(matchId) {
+    const meta = matchMeta[matchId];
+    if (!meta) return null;
+    if (meta.period >= 5) {
+      return { type: 'pen', homePen: meta.shootoutHome, awayPen: meta.shootoutAway };
+    }
+    if (meta.period >= 3) {
+      return { type: 'aet' };
+    }
+    return null;
+  }
+
   function normalize(str) {
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
@@ -112,8 +135,9 @@ const App = (() => {
 
   /* ── RENDER: CARD ── */
   function renderCard(m, idx) {
-    const t1     = TEAMS[m.h1] || { name: m.h1, abbr: m.h1, flag: '🏴' };
-    const t2     = TEAMS[m.h2] || { name: m.h2, abbr: m.h2, flag: '🏴' };
+    const { h1: h1key, h2: h2key } = getEffectiveTeams(m);
+    const t1     = TEAMS[h1key] || { name: h1key, abbr: h1key, flag: '🏴' };
+    const t2     = TEAMS[h2key] || { name: h2key, abbr: h2key, flag: '🏴' };
     const status = getStatus(m);
     const sc     = scores[m.id];
     const delay  = idx !== undefined ? ` style="--card-delay:${(idx % 9) * 0.06}s"` : '';
@@ -136,12 +160,21 @@ const App = (() => {
     if (status === 'past' || status === 'live') {
       const g1 = sc != null ? sc[0] : '–';
       const g2 = sc != null ? sc[1] : '–';
+      let decisionHtml = '';
+      if (m.phase && status === 'past') {
+        const dec = getMatchDecision(m.id);
+        if (dec?.type === 'pen') {
+          decisionHtml = `<div class="card-decision pen">Pên. ${dec.homePen}-${dec.awayPen}</div>`;
+        } else if (dec?.type === 'aet') {
+          decisionHtml = `<div class="card-decision aet">Prorrogação</div>`;
+        }
+      }
       vsHtml = `
         <div class="card-score">
           <span class="card-sc">${g1}</span>
           <span class="card-sc-sep">×</span>
           <span class="card-sc">${g2}</span>
-        </div>`;
+        </div>${decisionHtml}`;
     } else {
       vsHtml = `<div class="card-time">${m.h}</div>`;
     }
@@ -161,13 +194,13 @@ const App = (() => {
         <div class="card-head">${headHtml}</div>
         <div class="card-matchup">
           <div class="cb home">
-            ${flagEl(m.h1, t1)}
+            ${flagEl(h1key, t1)}
             <span class="cb-abbr">${t1.abbr}</span>
             <span class="cb-name">${t1.name}</span>
           </div>
           <div class="card-vs">${vsHtml}</div>
           <div class="cb away">
-            ${flagEl(m.h2, t2)}
+            ${flagEl(h2key, t2)}
             <span class="cb-abbr">${t2.abbr}</span>
             <span class="cb-name">${t2.name}</span>
           </div>
@@ -240,9 +273,10 @@ const App = (() => {
     if (searchQuery) {
       const q        = normalize(searchQuery);
       const filtered = MATCHES.filter(m => {
-        const t1 = TEAMS[m.h1] || {};
-        const t2 = TEAMS[m.h2] || {};
-        return [t1.name, t1.abbr, m.h1, t2.name, t2.abbr, m.h2]
+        const { h1: h1k, h2: h2k } = getEffectiveTeams(m);
+        const t1 = TEAMS[h1k] || {};
+        const t2 = TEAMS[h2k] || {};
+        return [t1.name, t1.abbr, h1k, t2.name, t2.abbr, h2k]
           .filter(Boolean)
           .some(v => normalize(v).includes(q));
       });
@@ -280,6 +314,47 @@ const App = (() => {
 
     document.getElementById('sections').innerHTML = html;
     document.getElementById('loadingState').classList.add('hidden');
+  }
+
+  /* ── PROPAGAÇÃO DO CHAVEAMENTO ── */
+  function propagateBracket() {
+    for (const matchId of Object.keys(scores)) {
+      const rule = BRACKET[matchId];
+      if (!rule) continue;
+
+      const match = MATCHES.find(m => m.id === matchId);
+      if (!match) continue;
+
+      const { h1: h1key, h2: h2key } = getEffectiveTeams(match);
+      if (h1key === 'TBD' || h2key === 'TBD') continue;
+
+      /* Determina vencedor: prefere o campo winner da ESPN (inclui pênaltis) */
+      const wd = matchWinners[matchId];
+      let winnerKey, loserKey;
+
+      if (wd) {
+        winnerKey = wd.winnerKey;
+        loserKey  = wd.loserKey;
+      } else {
+        const [g1, g2] = scores[matchId];
+        if      (g1 > g2) { winnerKey = h1key; loserKey = h2key; }
+        else if (g2 > g1) { winnerKey = h2key; loserKey = h1key; }
+        else continue; /* Empate ainda em aberto (prorrogação?) */
+      }
+
+      if (!winnerKey) continue;
+
+      /* Propaga vencedor para o próximo jogo */
+      if (rule.winner) {
+        if (!bracketTeams[rule.winner.to]) bracketTeams[rule.winner.to] = {};
+        bracketTeams[rule.winner.to][rule.winner.side] = winnerKey;
+      }
+      /* Propaga perdedor (SFs → disputa de 3º lugar) */
+      if (rule.loser && loserKey) {
+        if (!bracketTeams[rule.loser.to]) bracketTeams[rule.loser.to] = {};
+        bracketTeams[rule.loser.to][rule.loser.side] = loserKey;
+      }
+    }
   }
 
   /* ── FETCH PLACARES via ESPN API ── */
@@ -330,7 +405,11 @@ const App = (() => {
           const awayKey = ESPN_TO_LOCAL[away.team.displayName] || ESPN_TO_LOCAL[away.team.name];
           if (!homeKey || !awayKey) continue;
 
-          const localMatch = MATCHES.find(m => m.h1 === homeKey && m.h2 === awayKey);
+          /* Busca jogo local usando times efetivos (suporta R16+ já propagados) */
+          const localMatch = MATCHES.find(m => {
+            const { h1, h2 } = getEffectiveTeams(m);
+            return h1 === homeKey && h2 === awayKey;
+          });
           if (!localMatch) continue;
 
           const h = parseInt(home.score, 10);
@@ -339,7 +418,24 @@ const App = (() => {
             scores[localMatch.id] = [h, a];
             updated = true;
           }
+
+          /* Captura metadados: período e placar de pênaltis */
+          matchMeta[localMatch.id] = {
+            period:       comp.status?.period ?? 0,
+            shootoutHome: isFinite(+home.shootoutScore) ? +home.shootoutScore : null,
+            shootoutAway: isFinite(+away.shootoutScore) ? +away.shootoutScore : null,
+          };
+
+          /* Captura vencedor da ESPN (cobre pênaltis e prorrogação) */
+          if (home.winner === true) {
+            matchWinners[localMatch.id] = { winnerKey: homeKey, loserKey: awayKey };
+          } else if (away.winner === true) {
+            matchWinners[localMatch.id] = { winnerKey: awayKey, loserKey: homeKey };
+          }
         }
+
+        /* Propaga após cada data para que a próxima data resolva times do R16+ */
+        propagateBracket();
       }
 
       render();

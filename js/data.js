@@ -181,3 +181,44 @@ const MATCHES = [
   /* ── FINAL ── */
   { id:'k104', d:'2026-07-19', h:'16:00', h1:'TBD', h2:'TBD', venue:'Nova York / NJ',   phase:'F' },
 ];
+
+/* ─── CHAVEAMENTO MATA-MATA ───
+   Verificado via ESPN API (junho/2026).
+   side: 'h1' = time da casa, 'h2' = time visitante no próximo jogo.
+─── */
+const BRACKET = {
+  /* ── R32 → R16 (ESPN: R32-N = ordem cronológica dos jogos da R32) ── */
+  k073: { winner: { to:'k089', side:'h1' } }, // R32-1  → Oitavas jogo 1 (casa)
+  k075: { winner: { to:'k089', side:'h2' } }, // R32-4  → Oitavas jogo 1 (visita)
+  k074: { winner: { to:'k090', side:'h1' } }, // R32-3  → Oitavas jogo 2 (casa)
+  k078: { winner: { to:'k090', side:'h2' } }, // R32-5  → Oitavas jogo 2 (visita)
+  k076: { winner: { to:'k091', side:'h1' } }, // R32-2  → Oitavas jogo 3 (casa)
+  k077: { winner: { to:'k091', side:'h2' } }, // R32-6  → Oitavas jogo 3 (visita)
+  k079: { winner: { to:'k092', side:'h1' } }, // R32-7  → Oitavas jogo 4 (casa)
+  k080: { winner: { to:'k092', side:'h2' } }, // R32-8  → Oitavas jogo 4 (visita)
+  k084: { winner: { to:'k093', side:'h1' } }, // R32-11 → Oitavas jogo 5 (casa)
+  k083: { winner: { to:'k093', side:'h2' } }, // R32-12 → Oitavas jogo 5 (visita)
+  k082: { winner: { to:'k094', side:'h1' } }, // R32-9  → Oitavas jogo 6 (casa)
+  k081: { winner: { to:'k094', side:'h2' } }, // R32-10 → Oitavas jogo 6 (visita)
+  k088: { winner: { to:'k095', side:'h1' } }, // R32-14 → Oitavas jogo 7 (casa)
+  k087: { winner: { to:'k095', side:'h2' } }, // R32-16 → Oitavas jogo 7 (visita)
+  k085: { winner: { to:'k096', side:'h1' } }, // R32-13 → Oitavas jogo 8 (casa)
+  k086: { winner: { to:'k096', side:'h2' } }, // R32-15 → Oitavas jogo 8 (visita)
+  /* ── R16 → QF (ESPN: QF-1=R16-1×2, QF-2=R16-5×6, QF-3=R16-3×4, QF-4=R16-7×8) ── */
+  k089: { winner: { to:'k097', side:'h1' } }, // R16-1 → QF-1 (casa)
+  k090: { winner: { to:'k097', side:'h2' } }, // R16-2 → QF-1 (visita)
+  k093: { winner: { to:'k098', side:'h1' } }, // R16-5 → QF-2 (casa)
+  k094: { winner: { to:'k098', side:'h2' } }, // R16-6 → QF-2 (visita)
+  k091: { winner: { to:'k099', side:'h1' } }, // R16-3 → QF-3 (casa)
+  k092: { winner: { to:'k099', side:'h2' } }, // R16-4 → QF-3 (visita)
+  k095: { winner: { to:'k100', side:'h1' } }, // R16-7 → QF-4 (casa)
+  k096: { winner: { to:'k100', side:'h2' } }, // R16-8 → QF-4 (visita)
+  /* ── QF → SF (ESPN: SF-1=QF1×QF2, SF-2=QF3×QF4) ── */
+  k097: { winner: { to:'k101', side:'h1' } },
+  k098: { winner: { to:'k101', side:'h2' } },
+  k099: { winner: { to:'k102', side:'h1' } },
+  k100: { winner: { to:'k102', side:'h2' } },
+  /* ── SF → Final e 3º Lugar ── */
+  k101: { winner: { to:'k104', side:'h1' }, loser: { to:'k103', side:'h1' } },
+  k102: { winner: { to:'k104', side:'h2' }, loser: { to:'k103', side:'h2' } },
+};
