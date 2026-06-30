@@ -7,6 +7,7 @@ const App = (() => {
   let bracketTeams = {}; // { matchId: { h1: teamKey, h2: teamKey } }
   let matchWinners = {}; // { matchId: { winnerKey, loserKey } } — da ESPN ou por placar
   let matchMeta    = {}; // { matchId: { period, shootoutHome, shootoutAway } }
+  let stableDates  = new Set(); // datas já buscadas e estáveis — não são refetchadas
   let fetching    = false;
   let activeTab   = 'main';
   let searchQuery = '';
@@ -39,13 +40,11 @@ const App = (() => {
 
   /* ── HELPERS ── */
 
-  /* Retorna os times efetivos de um jogo, sobrescrevendo TBD com dados do bracket */
   function getEffectiveTeams(m) {
     const bt = bracketTeams[m.id] || {};
     return { h1: bt.h1 || m.h1, h2: bt.h2 || m.h2 };
   }
 
-  /* Retorna o tipo de decisão de um jogo (pênaltis ou prorrogação), null se tempo normal */
   function getMatchDecision(matchId) {
     const meta = matchMeta[matchId];
     if (!meta) return null;
@@ -82,6 +81,20 @@ const App = (() => {
     return 'live';
   }
 
+  /* Verdadeiro se o jogo acabou de encerrar (até 5 min após a janela ao vivo) */
+  function isJustDone(m) {
+    const now   = Date.now();
+    const start = matchDate(m).getTime();
+    const dur   = m.phase ? 135 : 110;
+    const end   = start + dur * 60 * 1000;
+    return now > end && now < end + 5 * 60 * 1000;
+  }
+
+  /* Verdadeiro se a data possui algum jogo ativo (ao vivo ou acabou de encerrar) */
+  function dateIsActive(dateStr) {
+    return MATCHES.some(m => m.d === dateStr && (getStatus(m) === 'live' || isJustDone(m)));
+  }
+
   function fmtDateShort(isoDate) {
     return new Date(isoDate + 'T12:00:00').toLocaleDateString('pt-BR', {
       day: 'numeric', month: 'short'
@@ -105,7 +118,6 @@ const App = (() => {
     F:   'Final',
   };
 
-  /* Converte emoji de bandeira → URL de imagem (flagcdn.com) */
   function flagURL(teamKey, emoji) {
     const overrides = { ENG: 'gb-eng', SCO: 'gb-sct', WAL: 'gb-wls' };
     if (overrides[teamKey]) return `https://flagcdn.com/w80/${overrides[teamKey]}.png`;
@@ -143,7 +155,6 @@ const App = (() => {
     const sc     = scores[m.id];
     const delay  = idx !== undefined ? ` style="--card-delay:${(idx % 9) * 0.06}s"` : '';
 
-    /* Cabeçalho */
     const phaseLabel = m.phase ? PHASE_LABEL[m.phase] : null;
     let headHtml;
     if (status === 'live') {
@@ -156,7 +167,6 @@ const App = (() => {
         <span class="card-round">${phaseLabel ? '' : (ROUND_LABEL[m.r] || '')}</span>`;
     }
 
-    /* Placar ou horário */
     let vsHtml;
     if (status === 'past' || status === 'live') {
       const g1 = sc != null ? sc[0] : '–';
@@ -180,7 +190,6 @@ const App = (() => {
       vsHtml = `<div class="card-time">${m.h}</div>`;
     }
 
-    /* Rodapé */
     let footHtml;
     if (status === 'past') {
       footHtml = `${fmtDateShort(m.d)} · ${m.h} · 📍 ${m.venue}`;
@@ -223,7 +232,7 @@ const App = (() => {
       <div class="cards-grid">${matches.map((m, i) => renderCard(m, i)).join('')}</div>`;
   }
 
-  /* ── RENDER: CALENDÁRIO (próximos jogos agrupados por dia) ── */
+  /* ── RENDER: CALENDÁRIO ── */
   function renderCalendar(matches) {
     if (matches.length === 0) return '';
 
@@ -329,7 +338,6 @@ const App = (() => {
       const { h1: h1key, h2: h2key } = getEffectiveTeams(match);
       if (h1key === 'TBD' || h2key === 'TBD') continue;
 
-      /* Determina vencedor: prefere o campo winner da ESPN (inclui pênaltis) */
       const wd = matchWinners[matchId];
       let winnerKey, loserKey;
 
@@ -340,22 +348,72 @@ const App = (() => {
         const [g1, g2] = scores[matchId];
         if      (g1 > g2) { winnerKey = h1key; loserKey = h2key; }
         else if (g2 > g1) { winnerKey = h2key; loserKey = h1key; }
-        else continue; /* Empate ainda em aberto (prorrogação?) */
+        else continue;
       }
 
       if (!winnerKey) continue;
 
-      /* Propaga vencedor para o próximo jogo */
       if (rule.winner) {
         if (!bracketTeams[rule.winner.to]) bracketTeams[rule.winner.to] = {};
         bracketTeams[rule.winner.to][rule.winner.side] = winnerKey;
       }
-      /* Propaga perdedor (SFs → disputa de 3º lugar) */
       if (rule.loser && loserKey) {
         if (!bracketTeams[rule.loser.to]) bracketTeams[rule.loser.to] = {};
         bracketTeams[rule.loser.to][rule.loser.side] = loserKey;
       }
     }
+  }
+
+  /* ── FETCH: UMA DATA ── */
+  async function fetchDate(dateStr) {
+    const yyyymmdd = dateStr.replace(/-/g, '');
+    const resp = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${yyyymmdd}`
+    );
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    let updated = false;
+
+    for (const event of data.events || []) {
+      const comp = event.competitions?.[0];
+      if (!comp) continue;
+      if (comp.status?.type?.name === 'STATUS_SCHEDULED') continue;
+
+      const home = comp.competitors?.find(c => c.homeAway === 'home');
+      const away = comp.competitors?.find(c => c.homeAway === 'away');
+      if (!home || !away) continue;
+
+      const homeKey = ESPN_TO_LOCAL[home.team.displayName] || ESPN_TO_LOCAL[home.team.name];
+      const awayKey = ESPN_TO_LOCAL[away.team.displayName] || ESPN_TO_LOCAL[away.team.name];
+      if (!homeKey || !awayKey) continue;
+
+      const localMatch = MATCHES.find(m => {
+        const { h1, h2 } = getEffectiveTeams(m);
+        return h1 === homeKey && h2 === awayKey;
+      });
+      if (!localMatch) continue;
+
+      const h = parseInt(home.score, 10);
+      const a = parseInt(away.score, 10);
+      if (!isNaN(h) && !isNaN(a)) {
+        scores[localMatch.id] = [h, a];
+        updated = true;
+      }
+
+      matchMeta[localMatch.id] = {
+        period:       comp.status?.period ?? 0,
+        shootoutHome: isFinite(+home.shootoutScore) ? +home.shootoutScore : null,
+        shootoutAway: isFinite(+away.shootoutScore) ? +away.shootoutScore : null,
+      };
+
+      if (home.winner === true) {
+        matchWinners[localMatch.id] = { winnerKey: homeKey, loserKey: awayKey };
+      } else if (away.winner === true) {
+        matchWinners[localMatch.id] = { winnerKey: awayKey, loserKey: homeKey };
+      }
+    }
+
+    return updated;
   }
 
   /* ── FETCH PLACARES via ESPN API ── */
@@ -367,77 +425,56 @@ const App = (() => {
     btn.classList.add('loading');
     btn.querySelector('span').textContent = 'Buscando...';
 
-    const datesToFetch = new Set();
+    /* Coleta datas que precisam ser buscadas, pulando as estáveis sem jogo ativo */
+    const needed = new Set();
     MATCHES.filter(m => getStatus(m) !== 'upcoming').forEach(m => {
-      datesToFetch.add(m.d);
-      const next = new Date(m.d + 'T12:00:00');
-      next.setDate(next.getDate() + 1);
-      datesToFetch.add(next.toISOString().slice(0, 10));
+      const d = m.d;
+      if (!stableDates.has(d) || dateIsActive(d)) needed.add(d);
+      /* Dia seguinte — jogos com início após 22h podem aparecer no dia seguinte na ESPN */
+      const [h] = m.h.split(':').map(Number);
+      if (h >= 22) {
+        const next = new Date(d + 'T12:00:00');
+        next.setDate(next.getDate() + 1);
+        const nextStr = next.toISOString().slice(0, 10);
+        if (!stableDates.has(nextStr) || dateIsActive(nextStr)) needed.add(nextStr);
+      }
     });
 
-    if (datesToFetch.size === 0) {
-      showUpdateBar('Nenhum jogo encerrado ainda.');
+    if (needed.size === 0) {
+      const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      showUpdateBar(`Sem novos placares — ${time}`);
       btn.classList.remove('loading');
       btn.querySelector('span').textContent = 'Atualizar';
       fetching = false;
       return;
     }
 
+    const allDates = [...needed].sort();
+
+    /*
+     * Fetches por fase — paralelo dentro de cada fase, sequencial entre fases.
+     * O bracket depende de R32 estar resolvido antes de R16, e assim por diante.
+     * Datas de grupo/R32 não têm times TBD, portanto podem ir em paralelo sem
+     * precisar de propagação prévia.
+     */
+    const phases = [
+      allDates.filter(d => d <  '2026-07-04'),            // Grupo + R32
+      allDates.filter(d => d >= '2026-07-04' && d <= '2026-07-07'), // R16
+      allDates.filter(d => d >= '2026-07-09' && d <= '2026-07-11'), // QF
+      allDates.filter(d => d >= '2026-07-14'),             // SF, 3P, Final
+    ];
+
     let updated = false;
     try {
-      for (const date of [...datesToFetch].sort()) {
-        const yyyymmdd = date.replace(/-/g, '');
-        const resp = await fetch(
-          `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${yyyymmdd}`
-        );
-        if (!resp.ok) continue;
-        const data = await resp.json();
-
-        for (const event of data.events || []) {
-          const comp = event.competitions?.[0];
-          if (!comp) continue;
-          if (comp.status?.type?.name === 'STATUS_SCHEDULED') continue;
-
-          const home = comp.competitors?.find(c => c.homeAway === 'home');
-          const away = comp.competitors?.find(c => c.homeAway === 'away');
-          if (!home || !away) continue;
-
-          const homeKey = ESPN_TO_LOCAL[home.team.displayName] || ESPN_TO_LOCAL[home.team.name];
-          const awayKey = ESPN_TO_LOCAL[away.team.displayName] || ESPN_TO_LOCAL[away.team.name];
-          if (!homeKey || !awayKey) continue;
-
-          /* Busca jogo local usando times efetivos (suporta R16+ já propagados) */
-          const localMatch = MATCHES.find(m => {
-            const { h1, h2 } = getEffectiveTeams(m);
-            return h1 === homeKey && h2 === awayKey;
-          });
-          if (!localMatch) continue;
-
-          const h = parseInt(home.score, 10);
-          const a = parseInt(away.score, 10);
-          if (!isNaN(h) && !isNaN(a)) {
-            scores[localMatch.id] = [h, a];
-            updated = true;
-          }
-
-          /* Captura metadados: período e placar de pênaltis */
-          matchMeta[localMatch.id] = {
-            period:       comp.status?.period ?? 0,
-            shootoutHome: isFinite(+home.shootoutScore) ? +home.shootoutScore : null,
-            shootoutAway: isFinite(+away.shootoutScore) ? +away.shootoutScore : null,
-          };
-
-          /* Captura vencedor da ESPN (cobre pênaltis e prorrogação) */
-          if (home.winner === true) {
-            matchWinners[localMatch.id] = { winnerKey: homeKey, loserKey: awayKey };
-          } else if (away.winner === true) {
-            matchWinners[localMatch.id] = { winnerKey: awayKey, loserKey: homeKey };
-          }
-        }
-
-        /* Propaga após cada data para que a próxima data resolva times do R16+ */
+      for (const phase of phases) {
+        if (!phase.length) continue;
+        const results = await Promise.all(phase.map(fetchDate));
+        if (results.some(Boolean)) updated = true;
         propagateBracket();
       }
+
+      /* Marca datas sem jogo ativo como estáveis para não rebuscar */
+      allDates.forEach(d => { if (!dateIsActive(d)) stableDates.add(d); });
 
       render();
       const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -484,23 +521,25 @@ const App = (() => {
 
   function refresh() { fetchScores(); }
 
+  /* ── INTERVALO ADAPTATIVO ──
+     30s com jogo ao vivo, 5 min sem jogos ativos.
+     Usa setTimeout recursivo para ajustar o delay a cada tick. */
+  function scheduleNext() {
+    const hasLive = MATCHES.some(m => getStatus(m) === 'live');
+    const delay   = hasLive ? 30_000 : 5 * 60_000;
+    setTimeout(async () => {
+      const active = MATCHES.some(m => getStatus(m) === 'live' || isJustDone(m));
+      if (active) await fetchScores();
+      else render();
+      scheduleNext();
+    }, delay);
+  }
+
   /* ── INIT ── */
   function init() {
     render();
     fetchScores();
-
-    setInterval(() => {
-      const now         = Date.now();
-      const hasLive     = MATCHES.some(m => getStatus(m) === 'live');
-      const hasJustDone = MATCHES.some(m => {
-        const start    = matchDate(m).getTime();
-        const duration = m.phase ? 135 : 110;
-        const end      = start + duration * 60 * 1000;
-        return now > end && now < end + 5 * 60 * 1000;
-      });
-      if (hasLive || hasJustDone) fetchScores();
-      else render();
-    }, 60 * 1000);
+    scheduleNext();
   }
 
   document.addEventListener('DOMContentLoaded', init);
