@@ -73,9 +73,10 @@ const App = (() => {
   }
 
   function getStatus(m) {
-    const now   = Date.now();
-    const start = matchDate(m).getTime();
-    const end   = start + 110 * 60 * 1000;
+    const now      = Date.now();
+    const start    = matchDate(m).getTime();
+    const duration = m.phase ? 135 : 110; // mata-mata: +25 min p/ prorrogação/pênaltis
+    const end      = start + duration * 60 * 1000;
     if (now < start) return 'upcoming';
     if (now > end)   return 'past';
     return 'live';
@@ -489,8 +490,15 @@ const App = (() => {
     fetchScores();
 
     setInterval(() => {
-      const hasLive = MATCHES.some(m => getStatus(m) === 'live');
-      if (hasLive) fetchScores();
+      const now         = Date.now();
+      const hasLive     = MATCHES.some(m => getStatus(m) === 'live');
+      const hasJustDone = MATCHES.some(m => {
+        const start    = matchDate(m).getTime();
+        const duration = m.phase ? 135 : 110;
+        const end      = start + duration * 60 * 1000;
+        return now > end && now < end + 5 * 60 * 1000;
+      });
+      if (hasLive || hasJustDone) fetchScores();
       else render();
     }, 60 * 1000);
   }
