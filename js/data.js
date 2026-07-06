@@ -201,9 +201,9 @@ const BRACKET = {
   k082: { winner: { to:'k094', side:'h1' } }, // R32-9  → Oitavas jogo 6 (casa)
   k081: { winner: { to:'k094', side:'h2' } }, // R32-10 → Oitavas jogo 6 (visita)
   k088: { winner: { to:'k095', side:'h1' } }, // R32-14 → Oitavas jogo 7 (casa)
-  k087: { winner: { to:'k095', side:'h2' } }, // R32-16 → Oitavas jogo 7 (visita)
+  k086: { winner: { to:'k095', side:'h2' } }, // R32-15 → Oitavas jogo 7 (visita)
   k085: { winner: { to:'k096', side:'h1' } }, // R32-13 → Oitavas jogo 8 (casa)
-  k086: { winner: { to:'k096', side:'h2' } }, // R32-15 → Oitavas jogo 8 (visita)
+  k087: { winner: { to:'k096', side:'h2' } }, // R32-16 → Oitavas jogo 8 (visita)
   /* ── R16 → QF (ESPN: QF-1=R16-1×2, QF-2=R16-5×6, QF-3=R16-3×4, QF-4=R16-7×8) ── */
   k089: { winner: { to:'k097', side:'h1' } }, // R16-1 → QF-1 (casa)
   k090: { winner: { to:'k097', side:'h2' } }, // R16-2 → QF-1 (visita)
