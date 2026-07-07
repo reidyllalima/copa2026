@@ -484,36 +484,42 @@ const App = (() => {
     return updated;
   }
 
-  /* ── FETCH PLACARES via ESPN API ── */
-  async function fetchScores() {
+  /* ── FETCH PLACARES via ESPN API ──
+     fullCheck=true (clique manual em "Atualizar") ignora o cache de
+     stableDates e a janela de 5 dias: busca TODAS as datas do torneio de
+     novo, revalidando placar, horário e local de todo mundo. O refresh
+     automático (scheduleNext) usa fullCheck=false para não sobrecarregar
+     a API da ESPN sem necessidade. */
+  async function fetchScores(fullCheck = false) {
     if (fetching) return;
     fetching = true;
     lastAdjustments = [];
 
     const btn = document.getElementById('refreshBtn');
     btn.classList.add('loading');
-    btn.querySelector('span').textContent = 'Buscando...';
+    btn.querySelector('span').textContent = fullCheck ? 'Conferindo tudo...' : 'Buscando...';
 
-    /* Coleta datas que precisam ser buscadas, pulando as estáveis sem jogo ativo.
-       Jogos futuros dentro da janela de checagem de integridade (próximos 5 dias)
-       também entram, para detectar divergência de horário/local ANTES do jogo
-       acontecer (e não só depois). */
+    /* Coleta datas que precisam ser buscadas. Fora do fullCheck, pula as
+       estáveis sem jogo ativo; jogos futuros dentro da janela de checagem
+       de integridade (próximos 5 dias) também entram, para detectar
+       divergência de horário/local ANTES do jogo acontecer. */
     const INTEGRITY_WINDOW_MS = 5 * 24 * 60 * 60 * 1000;
     const needed = new Set();
     MATCHES.filter(m => {
+      if (fullCheck) return true;
       const status = getStatus(m);
       if (status !== 'upcoming') return true;
       return matchDate(m).getTime() - Date.now() <= INTEGRITY_WINDOW_MS;
     }).forEach(m => {
       const d = m.d;
-      if (!stableDates.has(d) || dateIsActive(d)) needed.add(d);
+      if (fullCheck || !stableDates.has(d) || dateIsActive(d)) needed.add(d);
       /* Dia seguinte — jogos com início após 22h podem aparecer no dia seguinte na ESPN */
       const [h] = m.h.split(':').map(Number);
       if (h >= 22) {
         const next = new Date(d + 'T12:00:00');
         next.setDate(next.getDate() + 1);
         const nextStr = next.toISOString().slice(0, 10);
-        if (!stableDates.has(nextStr) || dateIsActive(nextStr)) needed.add(nextStr);
+        if (fullCheck || !stableDates.has(nextStr) || dateIsActive(nextStr)) needed.add(nextStr);
       }
     });
 
@@ -559,8 +565,10 @@ const App = (() => {
         console.warn('Ajustes de integridade aplicados:', lastAdjustments);
         const n = lastAdjustments.length;
         showUpdateBar(`Atualizado às ${time} · ${n} ajuste${n !== 1 ? 's' : ''} de dados aplicado${n !== 1 ? 's' : ''}`);
+      } else if (updated) {
+        showUpdateBar(`Atualizado às ${time}`);
       } else {
-        showUpdateBar(updated ? `Atualizado às ${time}` : `Sem novos placares — ${time}`);
+        showUpdateBar(fullCheck ? `Tudo conferido, sem mudanças — ${time}` : `Sem novos placares — ${time}`);
       }
     } catch (err) {
       console.error('Erro ESPN:', err);
@@ -602,7 +610,7 @@ const App = (() => {
     render();
   }
 
-  function refresh() { fetchScores(); }
+  function refresh() { fetchScores(true); }
 
   /* ── INTERVALO ADAPTATIVO ──
      30s com jogo ao vivo, 5 min sem jogos ativos.
