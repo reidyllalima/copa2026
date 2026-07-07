@@ -11,6 +11,7 @@ const App = (() => {
   let fetching    = false;
   let activeTab   = 'main';
   let searchQuery = '';
+  let lastAdjustments = []; // ajustes de integridade (data/hora/local) aplicados no fetch atual
 
   /* ── MAPEAMENTO ESPN → chave local ── */
   const ESPN_TO_LOCAL = {
@@ -36,6 +37,26 @@ const App = (() => {
     'England':'ENG', 'Croatia':'CRO', 'Ghana':'GHA', 'Panama':'PAN',
     'DR Congo':'COD', 'Congo DR':'COD', 'Democratic Republic of Congo':'COD',
     'Congo, DR':'COD', 'Congo (DR)':'COD',
+  };
+
+  /* ── MAPEAMENTO ESPN → cidade local (para checagem de integridade) ── */
+  const VENUE_ESPN_TO_CITY = {
+    'NRG Stadium': 'Houston',
+    'Lincoln Financial Field': 'Filadélfia',
+    'MetLife Stadium': 'Nova York / NJ',
+    'Estadio Banorte': 'Cidade do México',
+    'AT&T Stadium': 'Dallas',
+    'Lumen Field': 'Seattle',
+    'Mercedes-Benz Stadium': 'Atlanta',
+    'BC Place': 'Vancouver',
+    'Gillette Stadium': 'Boston',
+    'SoFi Stadium': 'Los Angeles',
+    'Hard Rock Stadium': 'Miami',
+    'GEHA Field at Arrowhead Stadium': 'Kansas City',
+    'Levi\'s Stadium': 'San Francisco',
+    'BMO Field': 'Toronto',
+    'Estadio Akron': 'Guadalajara',
+    'Estadio BBVA': 'Monterrey',
   };
 
   /* ── HELPERS ── */
@@ -364,6 +385,38 @@ const App = (() => {
     }
   }
 
+  /* ── CHECAGEM DE INTEGRIDADE: data/hora e local do jogo ──
+     Compara o que a ESPN reporta como horário/estádio oficial contra o
+     data.js local e autocorrige divergências em memória (sem precisar
+     de deploy). Roda a cada fetch — manual (botão Atualizar) ou automático. */
+  function reconcileMatch(m, event, comp) {
+    const changes = [];
+
+    const espnInstant = new Date(event.date);
+    if (!isNaN(espnInstant)) {
+      const localInstant = matchDate(m);
+      if (Math.abs(espnInstant - localInstant) >= 60 * 1000) {
+        const shifted = new Date(espnInstant.getTime() - 3 * 60 * 60 * 1000);
+        const newD = shifted.toISOString().slice(0, 10);
+        const newH = shifted.toISOString().slice(11, 16);
+        changes.push(`horário (${m.d} ${m.h} → ${newD} ${newH})`);
+        m.d = newD;
+        m.h = newH;
+      }
+    }
+
+    const venueName = comp.venue?.fullName;
+    const mappedCity = venueName && VENUE_ESPN_TO_CITY[venueName];
+    if (mappedCity && mappedCity !== m.venue) {
+      changes.push(`local (${m.venue} → ${mappedCity})`);
+      m.venue = mappedCity;
+    }
+
+    if (changes.length) {
+      lastAdjustments.push(`${m.id}: ${changes.join(', ')}`);
+    }
+  }
+
   /* ── FETCH: UMA DATA ── */
   async function fetchDate(dateStr) {
     const yyyymmdd = dateStr.replace(/-/g, '');
@@ -377,7 +430,6 @@ const App = (() => {
     for (const event of data.events || []) {
       const comp = event.competitions?.[0];
       if (!comp) continue;
-      if (comp.status?.type?.name === 'STATUS_SCHEDULED') continue;
 
       const home = comp.competitors?.find(c => c.homeAway === 'home');
       const away = comp.competitors?.find(c => c.homeAway === 'away');
@@ -392,6 +444,9 @@ const App = (() => {
         return h1 === homeKey && h2 === awayKey;
       });
       if (!localMatch) continue;
+
+      reconcileMatch(localMatch, event, comp);
+      if (comp.status?.type?.name === 'STATUS_SCHEDULED') continue;
 
       const h = parseInt(home.score, 10);
       const a = parseInt(away.score, 10);
@@ -420,14 +475,23 @@ const App = (() => {
   async function fetchScores() {
     if (fetching) return;
     fetching = true;
+    lastAdjustments = [];
 
     const btn = document.getElementById('refreshBtn');
     btn.classList.add('loading');
     btn.querySelector('span').textContent = 'Buscando...';
 
-    /* Coleta datas que precisam ser buscadas, pulando as estáveis sem jogo ativo */
+    /* Coleta datas que precisam ser buscadas, pulando as estáveis sem jogo ativo.
+       Jogos futuros dentro da janela de checagem de integridade (próximos 5 dias)
+       também entram, para detectar divergência de horário/local ANTES do jogo
+       acontecer (e não só depois). */
+    const INTEGRITY_WINDOW_MS = 5 * 24 * 60 * 60 * 1000;
     const needed = new Set();
-    MATCHES.filter(m => getStatus(m) !== 'upcoming').forEach(m => {
+    MATCHES.filter(m => {
+      const status = getStatus(m);
+      if (status !== 'upcoming') return true;
+      return matchDate(m).getTime() - Date.now() <= INTEGRITY_WINDOW_MS;
+    }).forEach(m => {
       const d = m.d;
       if (!stableDates.has(d) || dateIsActive(d)) needed.add(d);
       /* Dia seguinte — jogos com início após 22h podem aparecer no dia seguinte na ESPN */
@@ -478,7 +542,13 @@ const App = (() => {
 
       render();
       const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      showUpdateBar(updated ? `Atualizado às ${time}` : `Sem novos placares — ${time}`);
+      if (lastAdjustments.length) {
+        console.warn('Ajustes de integridade aplicados:', lastAdjustments);
+        const n = lastAdjustments.length;
+        showUpdateBar(`Atualizado às ${time} · ${n} ajuste${n !== 1 ? 's' : ''} de dados aplicado${n !== 1 ? 's' : ''}`);
+      } else {
+        showUpdateBar(updated ? `Atualizado às ${time}` : `Sem novos placares — ${time}`);
+      }
     } catch (err) {
       console.error('Erro ESPN:', err);
       showUpdateBar('Não foi possível atualizar. Tente novamente.');

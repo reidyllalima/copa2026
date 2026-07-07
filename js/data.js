@@ -144,7 +144,7 @@ const MATCHES = [
   { id:'k075', d:'2026-06-29', h:'22:00', h1:'NED', h2:'MAR', venue:'Monterrey',         phase:'R32' },
   { id:'k078', d:'2026-06-30', h:'14:00', h1:'CIV', h2:'NOR', venue:'Dallas',            phase:'R32' },
   { id:'k077', d:'2026-06-30', h:'18:00', h1:'FRA', h2:'SWE', venue:'Nova York / NJ',   phase:'R32' },
-  { id:'k079', d:'2026-06-30', h:'22:00', h1:'MEX', h2:'ECU', venue:'Cidade do México', phase:'R32' },
+  { id:'k079', d:'2026-06-30', h:'23:00', h1:'MEX', h2:'ECU', venue:'Cidade do México', phase:'R32' },
   { id:'k080', d:'2026-07-01', h:'13:00', h1:'ENG', h2:'COD', venue:'Atlanta',           phase:'R32' },
   { id:'k082', d:'2026-07-01', h:'17:00', h1:'BEL', h2:'SEN', venue:'Seattle',           phase:'R32' },
   { id:'k081', d:'2026-07-01', h:'21:00', h1:'USA', h2:'BIH', venue:'San Francisco',     phase:'R32' },
