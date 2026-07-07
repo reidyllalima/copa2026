@@ -439,26 +439,39 @@ const App = (() => {
       const awayKey = ESPN_TO_LOCAL[away.team.displayName] || ESPN_TO_LOCAL[away.team.name];
       if (!homeKey || !awayKey) continue;
 
+      /* Casamento por CONJUNTO de times, não por ordem mandante/visitante:
+         em jogo de campo neutro a FIFA/ESPN define "mandante" de forma
+         administrativa, que nem sempre bate com o lado h1/h2 que o nosso
+         BRACKET usa. Exigir a ordem exata já causou jogos decididos (ex:
+         Portugal x Espanha, EUA x Bélgica) nunca serem reconhecidos e
+         travarem a propagação para a fase seguinte. */
       const localMatch = MATCHES.find(m => {
         const { h1, h2 } = getEffectiveTeams(m);
-        return h1 === homeKey && h2 === awayKey;
+        return (h1 === homeKey && h2 === awayKey) || (h1 === awayKey && h2 === homeKey);
       });
       if (!localMatch) continue;
 
       reconcileMatch(localMatch, event, comp);
       if (comp.status?.type?.name === 'STATUS_SCHEDULED') continue;
 
+      /* Reordena os dados da ESPN para a orientação local (h1/h2), já que o
+         mandante da ESPN pode corresponder ao nosso h2 (visitante). */
+      const { h1: localH1 } = getEffectiveTeams(localMatch);
+      const espnHomeIsLocalH1 = localH1 === homeKey;
+
       const h = parseInt(home.score, 10);
       const a = parseInt(away.score, 10);
       if (!isNaN(h) && !isNaN(a)) {
-        scores[localMatch.id] = [h, a];
+        scores[localMatch.id] = espnHomeIsLocalH1 ? [h, a] : [a, h];
         updated = true;
       }
 
+      const homeShoot = isFinite(+home.shootoutScore) ? +home.shootoutScore : null;
+      const awayShoot = isFinite(+away.shootoutScore) ? +away.shootoutScore : null;
       matchMeta[localMatch.id] = {
         period:       comp.status?.period ?? 0,
-        shootoutHome: isFinite(+home.shootoutScore) ? +home.shootoutScore : null,
-        shootoutAway: isFinite(+away.shootoutScore) ? +away.shootoutScore : null,
+        shootoutHome: espnHomeIsLocalH1 ? homeShoot : awayShoot,
+        shootoutAway: espnHomeIsLocalH1 ? awayShoot : homeShoot,
       };
 
       if (home.winner === true) {
